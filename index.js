@@ -6,15 +6,26 @@ const port = 3000;
 
 app.use(bodyParser.json());
 
-// Simulando um "banco de dados" em JSON
-let dados = {
-    "11987654321": "12.345.678/0001-99",
-    "21987654321": "98.765.432/0001-88"
+// Função para ler os dados do arquivo JSON
+const lerDados = () => {
+    try {
+        const data = fs.readFileSync('data.json', 'utf8');
+        return JSON.parse(data);
+    } catch (err) {
+        console.error("Erro ao ler o arquivo:", err);
+        return {}; // Retorna um objeto vazio em caso de erro
+    }
+};
+
+// Função para escrever os dados no arquivo JSON
+const escreverDados = (dados) => {
+    fs.writeFileSync('data.json', JSON.stringify(dados, null, 2));
 };
 
 // Rota para buscar CNPJ pelo telefone
 app.get('/cnpj/:telefone', (req, res) => {
     const telefone = req.params.telefone;
+    const dados = lerDados(); // Ler os dados do arquivo
     const cnpj = dados[telefone];
     
     if (cnpj) {
@@ -29,7 +40,9 @@ app.post('/adicionar', (req, res) => {
     const { telefone, cnpj } = req.body;
     
     if (telefone && cnpj) {
-        dados[telefone] = cnpj;
+        const dados = lerDados(); // Ler os dados existentes
+        dados[telefone] = cnpj; // Adicionar o novo telefone e CNPJ
+        escreverDados(dados); // Gravar os dados atualizados no arquivo
         res.json({ message: "Dados adicionados com sucesso", dados: { telefone, cnpj } });
     } else {
         res.status(400).json({ error: "Informe telefone e CNPJ corretamente" });
